@@ -1,0 +1,76 @@
+version: '2.1'
+
+services:
+  zoo1:
+    image: zookeeper:3.4.9
+    hostname: zoo1
+    ports:
+      - "2181:2181"
+    environment:
+        ZOO_MY_ID: 1
+        ZOO_PORT: 2181
+        ZOO_SERVERS: server.1=zoo1:2888:3888
+    volumes:
+      - ./helenus-dev/zoo1/data:/data
+      - ./helenus-dev/zoo1/datalog:/datalog
+
+  kafka1:
+    image: confluentinc/cp-kafka:5.3.1
+    hostname: kafka1
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./helenus-dev/kafka1/data:/var/lib/kafka/data
+    depends_on:
+      - zoo1
+  cassandra-seed:
+    build:
+      context: .
+      dockerfile: Dockerfile_cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - "cassandra_data_seed:/var/lib/cassandra"
+    environment:
+      - "CASSANDRA_HOME=/etc/cassandra" 
+      - "CASSANDRA_SEEDS=cassandra-seed"
+      - "CASSANDRA_CLUSTER_NAME=Test Cluster"
+    depends_on:
+      - kafka1
+  cassandra1:
+    build:
+      context: .
+      dockerfile: Dockerfile_cassandra
+    volumes:
+      - "cassandra_data_1:/var/lib/cassandra"
+    environment:
+      - "CASSANDRA_HOME=/etc/cassandra" 
+      - "CASSANDRA_SEEDS=cassandra-seed"
+      - "CASSANDRA_CLUSTER_NAME=Test Cluster"
+    depends_on:
+      - cassandra-seed
+  cassandra2:
+    build:
+      context: .
+      dockerfile: Dockerfile_cassandra
+    volumes:
+      - "cassandra_data_2:/var/lib/cassandra"
+    environment:
+      - "CASSANDRA_HOME=/etc/cassandra" 
+      - "CASSANDRA_SEEDS=cassandra-seed"
+      - "CASSANDRA_CLUSTER_NAME=Test Cluster"
+    depends_on:
+      - cassandra-seed
+
+volumes:
+  cassandra_data_seed:
+  cassandra_data_1:
+  cassandra_data_2:
