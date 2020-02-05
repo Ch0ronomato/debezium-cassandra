@@ -9,6 +9,8 @@ RUN wget https://repo1.maven.org/maven2/io/debezium/debezium-connector-cassandra
 COPY default_cassandra.yaml /etc/cassandra/cassandra.yaml
 
 RUN mkdir /etc/debezium
+RUN mkdir -p /tmp/debezium/offsets
+RUN mkdir -p /tmp/debezium/relocation
 COPY default_config.properties /etc/debezium/cdc.properties
 
 RUN tar -xzf debezium-connector-cassandra-0.10.0.Final-plugin.tar.gz
