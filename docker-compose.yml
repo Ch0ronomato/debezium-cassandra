@@ -29,16 +29,21 @@ services:
       - ./helenus-dev/kafka1/data:/var/lib/kafka/data
     depends_on:
       - zoo1
-  schema-registry:
+  schemaregistry:
     image: confluentinc/cp-schema-registry
+    hostname: schemaregistry
     ports:
       - "8081:8081"
     environment:
       - "SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zoo1:2181"
       - "SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL=PLAINTEXT"
-      - "SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081"
-      - "SCHEMA_REGISTRY_HOST_NAME=schema-registry"
+      - "SCHEMA_REGISTRY_LISTENERS=http://schemaregistry:8081"
+      - "SCHEMA_REGISTRY_HOST_NAME=schemaregistry"
       - "SCHEMA_REGISTRY_DEBUG=true"
+    volumes:
+      - ./helenus-dev/schemaregistry/data:/var/lib/
+    depends_on:
+      - kafka1
   cassandra-seed:
     build:
       context: .
@@ -53,7 +58,7 @@ services:
       - "CASSANDRA_CLUSTER_NAME=Test Cluster"
     depends_on:
       - kafka1
-      - schema-registry
+      - schemaregistry
   cassandra1:
     build:
       context: .
@@ -66,7 +71,7 @@ services:
       - "CASSANDRA_CLUSTER_NAME=Test Cluster"
     depends_on:
       - cassandra-seed
-      - schema-registry
+      - schemaregistry
   cassandra2:
     build:
       context: .
@@ -78,8 +83,8 @@ services:
       - "CASSANDRA_SEEDS=cassandra-seed"
       - "CASSANDRA_CLUSTER_NAME=Test Cluster"
     depends_on:
-      - cassandra-seed
-      - schema-registry
+      - cassandra1
+      - schemaregistry
 
 volumes:
   cassandra_data_seed:
